@@ -63,8 +63,81 @@ class PDGraph:
         property_dict = {}
         add_ndex_properties_to_dict(ndex_property_graph_network['properties'], property_dict)
         self.properties = pd.Series(property_dict)
-        
-        ## TBD export a PDGraph to an NDEx PropertyGraphNetwork dict structure
+
+    ## export a PDGraph to an NDEx PropertyGraphNetwork dict structure
+    def to_property_graph_network(self, name):
+        result = {}
+        result['name'] = name
+        result['presentationProperties'] = []
+
+        nodes = {}
+
+        nodes_df = self.nodes
+
+        for index in nodes_df.index.values:
+            node = {'id': int(index)}
+            properties = []
+            for column in nodes_df.columns.values:
+                ndex_property = {}
+                ndex_property['valueId'] = 0
+                ndex_property['dataType'] = 'String'
+                ndex_property['value'] = nodes_df.at[index, column]
+                ndex_property['predicateId'] = 0
+                ndex_property['predicateString'] = column
+                ndex_property['type'] = 'NdexPropertyValuePair'
+                properties.append(ndex_property)
+            node['properties'] = properties
+            node['presentationProperties'] = []
+            node['type'] = 'PropertyGraphNode'
+            node['name'] = index
+            nodes[index] = node
+
+        result['nodes'] = nodes
+
+        edges = {}
+
+        edges_df = self.edges
+
+        special_edges = ['predicate', 'ndex:predicate', 'objectId', 'ndex:objectId', 'subjectId', 'ndex:subjectId']
+
+        for index in edges_df.index.values:
+            edge = {'id': int(index)}
+
+            for special_edge in special_edges:
+                if special_edge in edges_df.columns.values:
+                    edge_key = special_edge
+                    if edge_key.startswith("ndex:"):
+                        edge_key = edge_key[len("ndex:"):]
+                    edge[edge_key] = edges_df.at[index, special_edge]
+
+            properties = []
+            for column in edges_df.columns.values:
+                if column in special_edges:
+                    continue
+
+                value = edges_df.at[index, column]
+                if isinstance(value, (int, long, float, complex)):
+                    if math.isnan(value):
+                        continue
+
+                ndex_property = {}
+                ndex_property['valueId'] = 0
+                ndex_property['dataType'] = 'String'
+                ndex_property['value'] = edges_df.at[index, column]
+                ndex_property['predicateId'] = 0
+                ndex_property['predicateString'] = column
+                ndex_property['type'] = 'NdexPropertyValuePair'
+                properties.append(ndex_property)
+            edge['properties'] = properties
+            edge['presentationProperties'] = []
+            edge['type'] = 'PropertyGraphEdge'
+            edges[index] = edge
+
+        result['edges'] = edges
+
+        property_graph_network = json.dumps(result, indent=2, separators=(',', ':'))
+
+        return property_graph_network
 
 class Ndex:
         
@@ -167,7 +240,7 @@ class Ndex:
 #    network    POST    /network/asNetwork/group/{group UUID}    Network    NetworkSummary
     def save_new_network_for_group(self, network, group_id):
         route = "/network/asNetwork/group/%s" % (group_id)
-        self.removeUUIDFromNetwork(network)
+        # self.removeUUIDFromNetwork(network)
         return self.post(route, network)
        
 ##  Neighborhood PathQuery
@@ -194,13 +267,13 @@ class Ndex:
 #    network    POST    /network/asPropertyGraph    PropertyGraphNetwork    NetworkSummary
     def save_new_property_graph_network(self, property_graph_network):
         route = "/network/asPropertyGraph"
-        self.removeUUIDFromNetwork(property_graph_network)
+        # self.removeUUIDFromNetwork(property_graph_network)
         return self.post(route, property_graph_network)
 
 #    network    POST    /network/asPropertyGraph/group/{group UUID}    PropertyGraphNetwork    NetworkSummary
     def save_new_property_graph_network_for_group(self, property_graph_network, group_id):
         route = "/network/asPropertyGraph/group/%s" % (group_id)
-        self.removeUUIDFromNetwork(property_graph_network)
+        # self.removeUUIDFromNetwork(property_graph_network)
         return self.post(route, property_graph_network)
        
 ##  Neighborhood PathQuery
