@@ -21,9 +21,9 @@ def ndex_property_graph_network_to_network_x(ndex_property_graph_network):
 def strip_prefixes(input):
     st = input.lower()
     if st.startswith('bel:'):
-        return input[4:input.len()]
+        return input[4:len(input)]
     elif st.startswith('hgnc:'):
-         return input[5:input.len()]
+         return input[5:len(input)]
     else:
          return input
 
@@ -140,8 +140,11 @@ class NetworkWrapper:
             if type == "baseterm":
                 name = term['name']
                 if 'namespaceId' in term and term['namespaceId']:
-                    namespace_id = term['namespaceId']
-                    namespace = self.network['namespaces'][namespace_id]
+                    namespace_id = str(term['namespaceId'])
+                    if namespace_id == '-1':
+                        namespace = False
+                    else: 
+                        namespace = self.network['namespaces'][namespace_id]
 
                     if namespace:
                         if namespace['prefix']:
