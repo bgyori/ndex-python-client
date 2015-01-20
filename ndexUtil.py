@@ -21,9 +21,9 @@ def ndexPropertyGraphNetworkToNetworkX(ndexPropertyGraphNetwork):
 def stripPrefixes(input):
     st = input.lower()
     if st.startswith('bel:'):
-        return input[4:input.len()]
+        return input[4:len(input)]
     elif st.startswith('hgnc:'):
-         return input[5:input.len()]
+         return input[5:len(input)]
     else:
          return input
 
@@ -61,6 +61,54 @@ def getFunctionAbbreviation(input):
         return "sub"
     else:
         return fl
+
+def getFunctionFull(input):
+    st = input.lower()
+    fl = stripPrefixes(st)
+    if fl == "abundance":
+        return "abundance"
+    elif fl == "biological_process":
+        return "biologicalProcess"
+    elif fl ==  "catalytic_activity":
+        return "catalyticActivity"
+    elif fl ==  "complex_abundance":
+        return "complexAbundance"
+    elif fl ==  "pathology":
+        return "pathology"
+    elif fl ==  "peptidase_activity":
+        return "peptidaseActivity"
+    elif fl ==  "protein_abundance":
+        return "proteinAbundance"
+    elif fl ==  "rna_abundance":
+        return "rnaAbundance"
+    elif fl ==  "protein_modification":
+        return "proteinModification"
+    elif fl ==  "transcriptional_activity":
+        return "transcriptionalActivity"
+    elif fl ==  "molecular_activity":
+        return "molecularActivity"
+    elif fl ==  "degradation":
+        return "degradation"
+    elif fl ==  "kinase_activity":
+        return "kinaseActivity"
+    elif fl ==  "substitution":
+        return "substitution"
+    elif fl == "gtp_bound_activity":
+        return "gtpBoundActivity"
+    else:
+        return fl
+
+def getPredicateFull(p):
+    if p == 'INCREASES':
+        return 'increases'
+    elif p == 'DECREASES':
+        return 'decreases'
+    elif p == 'DIRECTLY_INCREASES':
+        return 'directlyIncreases'
+    elif p == 'DIRECTLY_DECREASES':
+        return 'directlyDecreases'
+    else:
+        return p
 
 class NetworkWrapper:
     def __init__(self, ndexNetwork):
@@ -106,6 +154,7 @@ class NetworkWrapper:
             objectLabel = self.nodeLabelMap[objectId]
         predicateId = edge['predicateId']
         predicateLabel = stripPrefixes(self.getTermLabel(predicateId))
+        predicateLabel = getPredicateFull(predicateLabel)
         label = "%s %s %s" % (subjectLabel, predicateLabel, objectLabel)
         return label
 
@@ -141,11 +190,18 @@ class NetworkWrapper:
                 name = term['name']
                 if 'namespaceId' in term and term['namespaceId']:
                     namespaceId = term['namespaceId']
-                    namespace = self.network['namespaces'][namespaceId]
+                    #namespace = self.network['namespaces'][namespaceId]
+                    try:
+                        namespace = self.network['namespaces'][str(namespaceId)]
+                    except KeyError:
+                        namespace = None
 
                     if namespace:
                         if namespace['prefix']:
-                            label = "%s:%s" % (namespace['prefix'], name)
+                            if namespace['prefix']!='BEL':
+                                label = "%s:%s" % (namespace['prefix'], name)
+                            else:
+                                label = name
                         elif namespace['uri']:
                             label = "%s%s" % (namespace['uri'], name)
                         else:
@@ -158,7 +214,8 @@ class NetworkWrapper:
             elif type == "functionterm":
                 functionTermId = term['functionTermId']
                 functionLabel = self.getTermLabel(functionTermId)
-                functionLabel = getFunctionAbbreviation(functionLabel)
+                #functionLabel = getFunctionAbbreviation(functionLabel)
+                functionLabel = getFunctionFull(functionLabel)
                 parameterLabels = []
                 for parameterId in term['parameterIds']:
                     parameterLabel = self.getTermLabel(parameterId)
@@ -179,6 +236,22 @@ class NetworkWrapper:
 
             self.termLabelMap[termId] = label
             return label
+
+    def writeStatements(self, fileName = None):
+        if fileName:
+            output = open(fileName, 'w')
+        else:
+            output = sys.stdout
+            
+        for citationId, supportIdList in self.citationToSupportMap.iteritems():
+            for supportId in supportIdList:
+                edgeList = self.supportToEdgeMap[supportId]
+                for edge in edgeList:
+                    # Write Edge
+                    output.write("%s\n" % self.getEdgeLabel(edge))
+        if fileName:
+            output.close()
+
 
     def writeSummary(self, fileName = None):
         if fileName:
