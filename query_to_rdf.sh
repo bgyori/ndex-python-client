@@ -33,4 +33,5 @@ echo -en "$properties\n$bel_statements" > $belfile
 # Use bel2rdf to convert to RDF file
 $belrbdir/bin/bel2rdf -b $belfile > $rdffile
 # Replace invalid hyphens in RDF file
-sed -ri '/_:([^ ]+)/{s/-//g;}' $rdffile
+sed '/_:\([^ ]\+\)/{s/-//g;}' < $rdffile > "$file.tmp"
+mv "$file.tmp" $rdffile
