@@ -1,7 +1,18 @@
 # Example: query_to_rdf.sh "ARAF BRAF RAF1" RAF_neighborhood
 #     produces RAF_neighborhood.bel and RAF_neighborhood.rdf
+# Requires bel.rb
 
-if [ "$#" -ne 2 ]; then
+# Change line below to set path to bel.rb
+belrbdir="../bel.rb"
+
+if [ ! -f "$belrbdir/bin/bel2rdf" ]
+then 
+    echo "Could not find $belrbdir/bin/bel2rdf. Set belrbdir in $0 to correct path."
+    exit 1
+fi
+
+if [ "$#" -ne 2 ]
+then
     echo "Usage: $0 \"protein1 protein2 ...\" outfile" >&2
     exit 1
 fi
@@ -20,6 +31,6 @@ bel_statements=$(cat $belfile)
 echo -en "$properties\n$bel_statements" > $belfile
 
 # Use bel2rdf to convert to RDF file
-../bel.rb/bin/bel2rdf -b $belfile > $rdffile
+$belrbdir/bin/bel2rdf -b $belfile > $rdffile
 # Replace invalid hyphens in RDF file
 sed -ri '/_:([^ ]+)/{s/-//g;}' $rdffile

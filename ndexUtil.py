@@ -6,6 +6,7 @@ Created on Sun Oct  5 11:10:59 2014
 """
 import sys
 import networkx as nx
+import re
 
 # Convert NDEx property graph json to a trivial networkx network
 def ndexPropertyGraphNetworkToNetworkX(ndexPropertyGraphNetwork):
@@ -89,12 +90,20 @@ def getFunctionFull(input):
         return "molecularActivity"
     elif fl ==  "degradation":
         return "degradation"
+    elif fl ==  "phosphatase_activity":
+        return "phosphataseActivity"
     elif fl ==  "kinase_activity":
         return "kinaseActivity"
+    elif fl ==  "cell_secretion":
+        return "cellSecretion"
     elif fl ==  "substitution":
         return "substitution"
     elif fl == "gtp_bound_activity":
         return "gtpBoundActivity"
+    elif fl == "cell_surface_expression":
+        return "cellSurfaceExpression"
+    elif fl == "micro_rna_abundance":
+        fl = "microRnaAbundance"
     else:
         return fl
 
@@ -199,6 +208,8 @@ class NetworkWrapper:
                     if namespace:
                         if namespace['prefix']:
                             if namespace['prefix']!='BEL':
+                                if re.search('[^a-zA-Z0-9]',name) != None:
+                                    name = '"'+name+'"'
                                 label = "%s:%s" % (namespace['prefix'], name)
                             else:
                                 label = name
@@ -237,18 +248,77 @@ class NetworkWrapper:
             self.termLabelMap[termId] = label
             return label
 
-    def writeStatements(self, fileName = None):
+    def writeBELScript(self, fileName = None):
         if fileName:
             output = open(fileName, 'w')
         else:
             output = sys.stdout
-            
+        
+        
+        # Print definitions in header
+        output.write('\n# Definitions Section\n')
+
+        # Print namespaces
+        for _,ns in self.network['namespaces'].iteritems():
+            if ns['uri'].endswith('.belns'):
+                output.write('DEFINE NAMESPACE %s AS URL "%s"\n' % (ns['prefix'],ns['uri']))
+        
+        # Print annotations
+        for _,ann in self.network['namespaces'].iteritems():
+            if ann['uri'].endswith('.belanno'):
+                output.write('DEFINE ANNOTATION %s AS URL "%s"\n' % (ann['prefix'],ann['uri']))
+
+        # Print BEL statements
+        output.write('\n#Statements section\n')
+
+        print 
+        print 'Unhandled statements'
+        print '===================='
+    
+        # Iterate by citation
         for citationId, supportIdList in self.citationToSupportMap.iteritems():
+            # Start a group for each citation
+            output.write('\nSET STATEMENT_GROUP = "Group %d"\n' % citationId)
+            try:
+                citation = self.network['citations'][str(citationId)]
+                citation_title = citation['title']
+                citation_terms = citation['identifier'].split(':')
+                if citation_terms[0]=='pmid':
+                    citation_type = 'PubMed'
+                    citation_id = citation_terms[1]
+                else:
+                    citation_type = 'N/A'
+                    citation_id = citation['identifier']
+                output.write(('SET Citation = {"%s","%s","%s"}\n' % (citation_type, citation_title, citation_id)).encode('utf8', 'replace'))    
+            except KeyError:
+                output.write('SET Citation = {"","",""}\n')
+
+            # Iterate by evidence within each citation
             for supportId in supportIdList:
+                support = self.network['supports'][str(supportId)]
+                supportText = support['text'].replace('"','').replace('\n',' ')
+                output.write((u'\nSET Evidence = "%s"\n' % supportText).encode('utf8', 'replace'))
                 edgeList = self.supportToEdgeMap[supportId]
+                # Print BEL statements 
                 for edge in edgeList:
-                    # Write Edge
-                    output.write("%s\n" % self.getEdgeLabel(edge))
+                    outstr = self.getEdgeLabel(edge)
+                    # Generate valid translocation statements - not used
+                    #outstr = re.sub(r'GOCCACC:GO:(\d+),GOCCACC:GO:(\d+)',r'fromLoc(GOCCACC:\1),toLoc(GOCCACC:\2)',outstr)
+
+                    # Reified edges not handled
+                    if outstr.find('reifiedEdge') == -1:
+                        # Translocation not handled
+                        if outstr.find('translocation') == -1:
+                            # 'None' modifiers not handled
+                            if outstr.find('None') == -1:
+                                output.write("%s\n" % outstr)
+                            else:
+                                print outstr
+                        else:
+                            print outstr
+                    else:
+                        print outstr
+            output.write('\nUNSET STATEMENT_GROUP\n')
         if fileName:
             output.close()
 
@@ -272,7 +342,7 @@ class NetworkWrapper:
                 support = self.network['supports'][str(supportId)]
                 # Write Support
                 output.write("_______________________________\n")
-                output.write("Evidence: %s\n\n" % support['text'])
+                output.write(("Evidence: %s\n\n" % support['text']).encode('utf8','replace'))
 
                 edgeList = self.supportToEdgeMap[supportId]
                 for edge in edgeList:
