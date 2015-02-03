@@ -120,7 +120,7 @@ def getPredicateFull(p):
         return p
 
 class NetworkWrapper:
-    def __init__(self, ndexNetwork):
+    def __init__(self, ndexNetwork, removeNamespace=None):
         self.network = ndexNetwork
         self.supportToEdgeMap = {}
         self.citationToSupportMap = {}
@@ -128,7 +128,14 @@ class NetworkWrapper:
         self.termLabelMap = {}
 
         for nodeId, node in ndexNetwork['nodes'].iteritems():
-            self.nodeLabelMap[int(nodeId)] = self.getNodeLabel(node)
+            nodeLabel = self.getNodeLabel(node)
+            removeNode = False
+            for rn in removeNamespace:
+                if nodeLabel.find(rn)!=-1:
+                    removeNode = True
+
+            if removeNode==False:
+                self.nodeLabelMap[int(nodeId)] = self.getNodeLabel(node)
 
         for edge in ndexNetwork['edges'].values():
             for supportId in edge['supportIds']:
@@ -302,6 +309,9 @@ class NetworkWrapper:
                 # Print BEL statements 
                 for edge in edgeList:
                     outstr = self.getEdgeLabel(edge)
+                    if outstr.find('missing') != -1:
+                        continue
+
                     # Generate valid translocation statements - not used
                     #outstr = re.sub(r'GOCCACC:GO:(\d+),GOCCACC:GO:(\d+)',r'fromLoc(GOCCACC:\1),toLoc(GOCCACC:\2)',outstr)
 

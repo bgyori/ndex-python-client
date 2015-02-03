@@ -13,5 +13,5 @@ if __name__ == '__main__':
     outfile = sys.argv[2]
     myNdex = nc.Ndex("http://test.ndexbio.org")
     myNet = myNdex.getNeighborhood('1ada3330-45cc-11e4-a9e5-000c29873918', proteins)
-    myWrapper = util.NetworkWrapper(myNet)
+    myWrapper = util.NetworkWrapper(myNet,removeNamespace=['MGI','RGD','PFM','NCM','PFR','NCR'])
     myWrapper.writeBELScript(outfile)
