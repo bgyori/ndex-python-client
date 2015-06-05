@@ -7,6 +7,7 @@ Created on Sun Oct  5 11:10:59 2014
 import sys
 import networkx as nx
 import re
+import StringIO
 
 # Convert NDEx property graph json to a trivial networkx network
 def ndexPropertyGraphNetworkToNetworkX(ndexPropertyGraphNetwork):
@@ -255,28 +256,33 @@ class NetworkWrapper:
             self.termLabelMap[termId] = label
             return label
 
-    def writeBELScript(self, fileName = None):
-        if fileName:
-            output = open(fileName, 'w')
-        else:
-            output = sys.stdout
+    def write_utf(self,output,string):
+        output.write(string.encode('utf8','replace'))
+        #output.write(string)
         
+    def writeBELScript(self, fileName = None):
+        output = StringIO.StringIO()
+       
+        self.write_utf(output,'#Properties section\n')
+        self.write_utf(output,'SET DOCUMENT Name = "NDEx query result in BEL script"\n')
+        self.write_utf(output,'SET DOCUMENT Description = "Query with ndex-python-client, one step neighborhood"\n')
+
         
         # Print definitions in header
-        output.write('\n# Definitions Section\n')
+        self.write_utf(output,'\n# Definitions Section\n')
 
         # Print namespaces
         for _,ns in self.network['namespaces'].iteritems():
             if ns['uri'].endswith('.belns'):
-                output.write('DEFINE NAMESPACE %s AS URL "%s"\n' % (ns['prefix'],ns['uri']))
+                self.write_utf(output,'DEFINE NAMESPACE %s AS URL "%s"\n' % (ns['prefix'],ns['uri']))
         
         # Print annotations
         for _,ann in self.network['namespaces'].iteritems():
             if ann['uri'].endswith('.belanno'):
-                output.write('DEFINE ANNOTATION %s AS URL "%s"\n' % (ann['prefix'],ann['uri']))
+                self.write_utf(output,'DEFINE ANNOTATION %s AS URL "%s"\n' % (ann['prefix'],ann['uri']))
 
         # Print BEL statements
-        output.write('\n#Statements section\n')
+        self.write_utf(output,'\n#Statements section\n')
 
         print 
         print 'Unhandled statements'
@@ -285,7 +291,7 @@ class NetworkWrapper:
         # Iterate by citation
         for citationId, supportIdList in self.citationToSupportMap.iteritems():
             # Start a group for each citation
-            output.write('\nSET STATEMENT_GROUP = "Group %d"\n' % citationId)
+            self.write_utf(output,'\nSET STATEMENT_GROUP = "Group %d"\n' % citationId)
             try:
                 citation = self.network['citations'][str(citationId)]
                 citation_title = citation['title']
@@ -296,15 +302,15 @@ class NetworkWrapper:
                 else:
                     citation_type = 'N/A'
                     citation_id = citation['identifier']
-                output.write(('SET Citation = {"%s","%s","%s"}\n' % (citation_type, citation_title, citation_id)).encode('utf8', 'replace'))    
+                self.write_utf(output,('SET Citation = {"%s","%s","%s"}\n' % (citation_type, citation_title, citation_id)))    
             except KeyError:
-                output.write('SET Citation = {"","",""}\n')
-
+                self.write_utf(output,'SET Citation = {"","",""}\n')
+           
             # Iterate by evidence within each citation
             for supportId in supportIdList:
                 support = self.network['supports'][str(supportId)]
                 supportText = support['text'].replace('"','').replace('\n',' ')
-                output.write((u'\nSET Evidence = "%s"\n' % supportText).encode('utf8', 'replace'))
+                self.write_utf(output,('\nSET Evidence = "%s"\n' % supportText))
                 edgeList = self.supportToEdgeMap[supportId]
                 # Print BEL statements 
                 for edge in edgeList:
@@ -321,17 +327,24 @@ class NetworkWrapper:
                         if outstr.find('translocation') == -1:
                             # 'None' modifiers not handled
                             if outstr.find('None') == -1:
-                                output.write("%s\n" % outstr)
+                                print outstr
+                                self.write_utf(output,"%s\n" % outstr)
                             else:
                                 print outstr
                         else:
                             print outstr
                     else:
                         print outstr
-            output.write('\nUNSET STATEMENT_GROUP\n')
-        if fileName:
-            output.close()
+            self.write_utf(output,'\nUNSET STATEMENT_GROUP\n')
 
+        retstr = output.getvalue()
+        if fileName:
+            outfile = open(fileName, 'wt')
+            outfile.write(retstr)
+            outfile.close()
+
+        output.close()
+        return retstr
 
     def writeSummary(self, fileName = None):
         if fileName:
