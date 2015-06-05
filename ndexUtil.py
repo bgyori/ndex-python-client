@@ -69,41 +69,41 @@ def getFunctionFull(input):
     fl = stripPrefixes(st)
     if fl == "abundance":
         return "abundance"
-    elif fl == "biological_process":
+    elif fl == "biologicalprocess":
         return "biologicalProcess"
-    elif fl ==  "catalytic_activity":
+    elif fl ==  "catalyticactivity":
         return "catalyticActivity"
-    elif fl ==  "complex_abundance":
+    elif fl ==  "complexabundance":
         return "complexAbundance"
     elif fl ==  "pathology":
         return "pathology"
-    elif fl ==  "peptidase_activity":
+    elif fl ==  "peptidaseactivity":
         return "peptidaseActivity"
-    elif fl ==  "protein_abundance":
+    elif fl ==  "proteinabundance":
         return "proteinAbundance"
-    elif fl ==  "rna_abundance":
+    elif fl ==  "rnaabundance":
         return "rnaAbundance"
-    elif fl ==  "protein_modification":
+    elif fl ==  "proteinmodification":
         return "proteinModification"
-    elif fl ==  "transcriptional_activity":
+    elif fl ==  "transcriptionalactivity":
         return "transcriptionalActivity"
-    elif fl ==  "molecular_activity":
+    elif fl ==  "molecularactivity":
         return "molecularActivity"
     elif fl ==  "degradation":
         return "degradation"
-    elif fl ==  "phosphatase_activity":
+    elif fl ==  "phosphataseactivity":
         return "phosphataseActivity"
-    elif fl ==  "kinase_activity":
+    elif fl ==  "kinaseactivity":
         return "kinaseActivity"
-    elif fl ==  "cell_secretion":
+    elif fl ==  "cellsecretion":
         return "cellSecretion"
     elif fl ==  "substitution":
         return "substitution"
-    elif fl == "gtp_bound_activity":
+    elif fl == "gtpboundactivity":
         return "gtpBoundActivity"
-    elif fl == "cell_surface_expression":
+    elif fl == "cellsurfaceexpression":
         return "cellSurfaceExpression"
-    elif fl == "micro_rna_abundance":
+    elif fl == "micrornaabundance":
         fl = "microRnaAbundance"
     else:
         return fl
